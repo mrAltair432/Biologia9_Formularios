@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Panel docente · Biología 9</title>
+<link rel="icon" href="assets/logo.png">
+<link rel="stylesheet" href="css/style.css">
+<meta name="robots" content="noindex">
+</head>
+<body>
+<header class="hero" style="padding-bottom:64px">
+  <div class="wrap">
+    <div class="brand"><a href="index.html"><img src="assets/logo.png" alt="Logo del colegio"></a></div>
+    <h1>Panel <em>docente</em></h1>
+    <p>Consulta, filtra y exporta los resultados de las evaluaciones.</p>
+  </div>
+</header>
+<main style="max-width:1100px">
+  <section class="card" id="login">
+    <h2>Acceso</h2>
+    <p class="sub">Ingresa la clave docente configurada en Apps Script.</p>
+    <div class="toolbar">
+      <div><label class="f" for="pw">Clave</label><input type="password" id="pw" autocomplete="current-password"></div>
+      <button class="btn" id="loadBtn" style="flex:none">Entrar</button>
+      <button class="btn ghost" id="localBtn" style="flex:none">Ver datos de prueba locales</button>
+    </div>
+    <p class="err" id="loginErr" style="display:block"></p>
+  </section>
+
+  <div id="panel" class="hidden">
+    <div class="stats" id="stats"></div>
+    <section class="card">
+      <div class="toolbar">
+        <div><label class="f">Actividad</label><select id="fExam"><option value="">Todas</option><option value="taller">Taller de repaso</option><option value="quiz">Quiz final</option></select></div>
+        <div><label class="f">Curso</label><select id="fCourse"><option value="">Todos</option></select></div>
+        <div><label class="f">Buscar</label><input type="text" id="fText" placeholder="Nombre o correo"></div>
+        <button class="btn gold" id="csvBtn" style="flex:none">⬇ Exportar CSV</button>
+      </div>
+    </section>
+    <section class="card"><h2>Resultados</h2><div class="tablewrap" style="max-height:520px"><table id="tbl"></table></div></section>
+    <section class="card"><h2>Análisis por pregunta</h2><p class="sub">Porcentaje de aciertos con los filtros actuales. Las más difíciles aparecen en rojo.</p><div id="items"></div></section>
+  </div>
+</main>
+
+<script src="js/config.js"></script>
+<script src="js/exams.js"></script>
+<script src="js/docente.js"></script>
+</body>
+</html>

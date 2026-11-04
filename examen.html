@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Evaluación · Biología 9</title>
+<link rel="icon" href="assets/logo.png">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<header class="hero" style="padding-bottom:64px">
+  <div class="wrap">
+    <div class="brand"><a href="index.html"><img src="assets/logo.png" alt="Logo del colegio"></a></div>
+    <h1 id="title"></h1>
+    <p id="subtitle"></p>
+  </div>
+</header>
+
+<div class="progress hidden" id="progress"><div class="in">
+  <span id="progTxt">0 / 0</span><div class="bar"><i id="progBar"></i></div><span class="timer" id="timer">00:00</span>
+</div></div>
+
+<main id="main">
+  <form id="form" novalidate>
+    <section class="card" id="idCard">
+      <h2>Tus datos</h2>
+      <p class="sub">Aparecerán en tu ticket. Revisa que tu correo esté bien escrito.</p>
+      <div class="fields">
+        <div><label class="f" for="name">Nombre completo</label><input type="text" id="name" autocomplete="name" placeholder="Ej: Ana María Gómez"><div class="err">Escribe tu nombre completo.</div></div>
+        <div><label class="f" for="email">Correo electrónico</label><input type="email" id="email" autocomplete="email" placeholder="tucorreo@ejemplo.com"><div class="err">Escribe un correo válido.</div></div>
+        <div><label class="f" for="course">Curso</label><input type="text" id="course" placeholder="Ej: 901" maxlength="12"><div class="err">Escribe tu curso.</div></div>
+        <div id="selfWrap" class="hidden"><label class="f" for="selfEval">Autoevaluación (0.0 – 5.0)</label><input type="number" id="selfEval" min="0" max="5" step="0.1" placeholder="Ej: 4.0"><div class="err">Escribe un valor entre 0 y 5.</div></div>
+      </div>
+    </section>
+    <div id="questions"></div>
+    <div class="actions"><button class="btn gold" type="submit" id="submitBtn">Terminar y generar ticket ✓</button></div>
+    <p class="note" id="missingNote"></p>
+  </form>
+
+  <section class="card result hidden" id="result"></section>
+</main>
+<footer>Tu progreso se guarda automáticamente en este navegador.</footer>
+
+<script src="js/jspdf.umd.min.js"></script>
+<script src="js/config.js"></script>
+<script src="js/exams.js"></script>
+<script src="js/ticket.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
