@@ -4,7 +4,9 @@
  * de una hoja de cálculo nueva.
  */
 const SHEET = "Respuestas";
-const HEADERS = ["Fecha", "ID ticket", "Actividad", "Nombre", "Correo", "Curso", "Autoevaluación", "Correctas", "Total", "Nota", "Secciones", "Respuestas", "Segundos"];
+const TEACHER_EMAIL = "jhongonzalez@colegiocambridge.edu.co";
+const TZ = "America/Bogota";
+const HEADERS = ["Fecha de entrega", "Hora de inicio", "ID ticket", "Actividad", "Nombre", "Correo", "Curso", "Autoevaluación", "Correctas", "Total", "Nota", "Secciones", "Respuestas", "Segundos"];
 
 function getSheet_() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -14,6 +16,7 @@ function getSheet_() {
     sh.appendRow(HEADERS);
     sh.setFrozenRows(1);
     sh.getRange(1, 1, 1, HEADERS.length).setFontWeight("bold").setBackground("#12285a").setFontColor("#ffffff");
+    sh.getRange("A:B").setNumberFormat("yyyy-mm-dd hh:mm:ss");
   }
   return sh;
 }
@@ -21,6 +24,8 @@ function getSheet_() {
 function json_(o) {
   return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON);
 }
+
+function iso_(v) { return v instanceof Date ? v.toISOString() : String(v); }
 
 // Recibe envíos de estudiantes y consultas de docentes (acción "list").
 function doPost(e) {
@@ -33,8 +38,8 @@ function doPost(e) {
     const values = getSheet_().getDataRange().getValues();
     const rows = values.slice(1).map(function (r) {
       return {
-        submittedAt: r[0] instanceof Date ? r[0].toISOString() : String(r[0]), id: r[1], exam: r[2], name: r[3], email: r[4], course: r[5],
-        selfEval: r[6], correct: r[7], total: r[8], grade: r[9], sections: r[10], answers: r[11], seconds: r[12]
+        submittedAt: iso_(r[0]), startedAt: iso_(r[1]), id: r[2], exam: r[3], name: r[4], email: r[5], course: r[6],
+        selfEval: r[7], correct: r[8], total: r[9], grade: r[10], sections: r[11], answers: r[12], seconds: r[13]
       };
     });
     return json_({ ok: true, rows: rows });
@@ -43,21 +48,44 @@ function doPost(e) {
   if (!data.id || !data.exam || !data.name || !data.email) return json_({ ok: false, error: "missing_fields" });
   const lock = LockService.getScriptLock();
   lock.waitLock(20000);
+  let isNew = false;
   try {
     const sh = getSheet_();
-    const ids = sh.getLastRow() > 1 ? sh.getRange(2, 2, sh.getLastRow() - 1, 1).getValues().flat() : [];
+    const ids = sh.getLastRow() > 1 ? sh.getRange(2, 3, sh.getLastRow() - 1, 1).getValues().flat() : [];
     if (ids.indexOf(data.id) === -1) {
+      isNew = true;
       sh.appendRow([
-        new Date(data.submittedAt || Date.now()), data.id, data.exam, String(data.name).slice(0, 120), String(data.email).slice(0, 120),
-        String(data.course).slice(0, 20), data.selfEval, Number(data.correct), Number(data.total), Number(data.grade),
-        String(data.sections || ""), String(data.answers || ""), Number(data.seconds || 0)
+        new Date(data.submittedAt || Date.now()), new Date(data.startedAt || data.submittedAt || Date.now()), data.id, data.exam,
+        String(data.name).slice(0, 120), String(data.email).slice(0, 120), String(data.course).slice(0, 20), data.selfEval,
+        Number(data.correct), Number(data.total), Number(data.grade), String(data.sections || ""), String(data.answers || ""), Number(data.seconds || 0)
       ]);
     }
   } finally {
     lock.releaseLock();
   }
+  if (isNew) notify_(data);
   return json_({ ok: true });
 }
+
+// Avisa al docente por correo con el ticket PDF adjunto.
+function notify_(d) {
+  try {
+    const when = Utilities.formatDate(new Date(d.submittedAt || Date.now()), TZ, "yyyy-MM-dd HH:mm:ss");
+    const opts = {
+      to: TEACHER_EMAIL,
+      replyTo: String(d.email),
+      subject: "[Biología 9] " + d.examTitle + " · " + d.name + " (" + d.course + ") · " + Number(d.grade).toFixed(1),
+      htmlBody: "<p><b>" + esc_(d.name) + "</b> (" + esc_(d.email) + ") · Curso " + esc_(d.course) + "</p>" +
+        "<p>Actividad: " + esc_(d.examTitle) + "<br>Entregado: " + when + "<br>Nota: <b>" + Number(d.grade).toFixed(1) + "</b> (" + d.correct + "/" + d.total + ")<br>ID: " + esc_(d.id) + "</p>"
+    };
+    if (d.pdfBase64) {
+      opts.attachments = [Utilities.newBlob(Utilities.base64Decode(d.pdfBase64), "application/pdf", d.id + ".pdf")];
+    }
+    MailApp.sendEmail(opts);
+  } catch (err) { console.error(err); }
+}
+
+function esc_(s) { return String(s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
 
 function doGet() {
   return json_({ ok: true, service: "bio9-evaluaciones" });

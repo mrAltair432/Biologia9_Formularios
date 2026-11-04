@@ -67,9 +67,9 @@
 
   function csv() {
     const rows = filtered();
-    const head = ["Fecha", "ID", "Actividad", "Nombre", "Correo", "Curso", "Autoevaluación", "Correctas", "Total", "Nota", "Secciones", "Respuestas", "Segundos"];
+    const head = ["Fecha de entrega", "Hora de inicio", "ID", "Actividad", "Nombre", "Correo", "Curso", "Autoevaluación", "Correctas", "Total", "Nota", "Secciones", "Respuestas", "Segundos"];
     const cell = (v) => { let s = String(v == null ? "" : v); if (/^[=+\-@]/.test(s)) s = "'" + s; return '"' + s.replace(/"/g, '""') + '"'; };
-    const lines = [head.map(cell).join(",")].concat(rows.map((r) => [r.submittedAt, r.id, examName(r.exam), r.name, r.email, r.course, r.selfEval, r.correct, r.total, r.grade, r.sections, r.answers, r.seconds].map(cell).join(",")));
+    const lines = [head.map(cell).join(",")].concat(rows.map((r) => [r.submittedAt, r.startedAt, r.id, examName(r.exam), r.name, r.email, r.course, r.selfEval, r.correct, r.total, r.grade, r.sections, r.answers, r.seconds].map(cell).join(",")));
     const a = document.createElement("a");
     a.href = URL.createObjectURL(new Blob(["\ufeff" + lines.join("\r\n")], { type: "text/csv;charset=utf-8" }));
     a.download = "resultados_biologia9.csv"; a.click();

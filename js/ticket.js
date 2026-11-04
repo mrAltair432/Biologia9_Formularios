@@ -19,7 +19,7 @@
 
   const slug = (s) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9]+/g, "_").replace(/^_|_$/g, "");
 
-  window.makeTicket = async function (rec, g, exam) {
+  window.makeTicket = async function (rec, g, exam, asData) {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF({ unit: "mm", format: "a4" });
     const W = 210, M = 16;
@@ -107,6 +107,7 @@
     doc.text("Código único de verificación", W - M, 291, { align: "right" });
 
     const fname = slug(rec.name) + "_" + slug(rec.course) + "_" + rec.grade.toFixed(1).replace(".", "-") + "_" + exam.id + ".pdf";
+    if (asData) return doc.output("datauristring");
     doc.save(fname);
   };
 })();

@@ -71,14 +71,44 @@
   });
   paintSelections();
 
-  // Barra de progreso fija y cronómetro
+  // Barra de progreso fija y cronómetro: solo después de registrar los datos
   const prog = $("progress");
-  prog.classList.remove("hidden");
+  let timerId = null;
   const tick = () => {
     const s = Math.floor((Date.now() - state.start) / 1000);
     $("timer").textContent = String(Math.floor(s / 60)).padStart(2, "0") + ":" + String(s % 60).padStart(2, "0");
   };
-  save(); tick(); const timerId = setInterval(tick, 1000);
+  function enterQuiz() {
+    $("idCard").classList.add("hidden");
+    $("who").innerHTML = "<strong>" + esc(state.name) + "</strong> · Curso " + esc(state.course) + " · " + esc(state.email);
+    $("quizPart").classList.remove("hidden");
+    prog.classList.remove("hidden");
+    tick(); timerId = setInterval(tick, 1000);
+    window.scrollTo({ top: 0 });
+  }
+  const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+  function validateId() {
+    let first = null, ok = true;
+    const bad = (el) => { el.classList.add("invalid"); ok = false; first = first || el; };
+    if (state.name.trim().split(/\s+/).filter(Boolean).length < 2) bad($("name"));
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(state.email.trim())) bad($("email"));
+    if (!state.course.trim()) bad($("course"));
+    if (exam.selfEval) {
+      const v = parseFloat(state.selfEval);
+      if (isNaN(v) || v < 0 || v > 5) bad($("selfEval"));
+    }
+    $("idCard").classList.toggle("show-err", !ok);
+    if (first) first.focus();
+    return ok;
+  }
+
+  $("startBtn").addEventListener("click", () => {
+    if (!validateId()) return;
+    state.started = true; state.start = Date.now(); save();
+    enterQuiz();
+  });
+  if (state.started) enterQuiz();
 
   // Evaluación
   function grade() {
@@ -97,22 +127,11 @@
   }
 
   function validate() {
-    let first = null, ok = true;
-    const bad = (el) => { el.classList.add("invalid"); ok = false; first = first || el; };
-    if (state.name.trim().split(/\s+/).filter(Boolean).length < 2) bad($("name"));
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(state.email.trim())) bad($("email"));
-    if (!state.course.trim()) bad($("course"));
-    if (exam.selfEval) {
-      const v = parseFloat(state.selfEval);
-      if (isNaN(v) || v < 0 || v > 5) bad($("selfEval"));
-    }
-    $("idCard").classList.toggle("show-err", !ok);
     const missing = flat.filter((q) => state.answers[q.n] === undefined);
     flat.forEach((q) => $("q" + q.n).classList.toggle("missing", state.answers[q.n] === undefined));
-    if (missing.length) { ok = false; first = first || $("q" + missing[0].n); }
     $("missingNote").textContent = missing.length ? "Te falta responder " + missing.length + (missing.length === 1 ? " pregunta." : " preguntas.") : "";
-    if (first) first.scrollIntoView({ behavior: "smooth", block: "center" });
-    return ok;
+    if (missing.length) $("q" + missing[0].n).scrollIntoView({ behavior: "smooth", block: "center" });
+    return !missing.length;
   }
 
   // Envío a Google Sheets (Apps Script). Si falla, queda en cola y se reintenta.
@@ -139,6 +158,7 @@
     btn.disabled = true; btn.textContent = "Enviando…";
     clearInterval(timerId);
     const g = grade();
+    const startedAt = new Date(state.start).toISOString();
     const rec = {
       id: makeId(), exam: exam.id, examTitle: exam.title,
       name: state.name.trim().replace(/\s+/g, " "), email: state.email.trim().toLowerCase(), course: state.course.trim(),
@@ -147,9 +167,11 @@
       sections: g.secs.map((s) => s.short + ":" + s.correct + "/" + s.total).join(" | "),
       answers: flat.map((q) => LET[state.answers[q.n]]).join(""),
       seconds: Math.floor((Date.now() - state.start) / 1000),
-      submittedAt: new Date().toISOString()
+      startedAt, submittedAt: new Date().toISOString()
     };
-    const status = await send(rec);
+    let pdf = "";
+    try { pdf = (await window.makeTicket(rec, g, exam, true)).split(",")[1]; } catch (err) {}
+    const status = await send(Object.assign({}, rec, { pdfBase64: pdf }));
     if (status === "fail") localStorage.setItem(QUEUE, JSON.stringify(queue().concat(rec)));
     if (status === "local") localStorage.setItem("bio9:local", JSON.stringify(JSON.parse(localStorage.getItem("bio9:local") || "[]").concat(rec)));
     localStorage.removeItem(KEY);

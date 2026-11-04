@@ -18,4 +18,6 @@ Mientras `SCRIPT_URL` esté vacío el sitio funciona en modo prueba (datos solo 
 
 - La nota va de 0.0 a 5.0 (aciertos / total × 5). El estudiante solo ve su nota y su ticket, no las respuestas correctas.
 - Las claves están en `js/exams.js` (`a` = índice de la correcta). La calificación se hace en el navegador.
+- La fecha y hora de inicio y de entrega de cada estudiante quedan registradas (hora de Bogotá en el correo).
+- Cada entrega nueva llega a `jhongonzalez@colegiocambridge.edu.co` con el ticket PDF adjunto (se cambia en `TEACHER_EMAIL` de `Code.gs`). Al desplegar, Google pedirá permiso para enviar correos.
 - Los envíos fallidos por falta de conexión se guardan y se reintentan.
