@@ -10,14 +10,14 @@
   const flat = [];
   exam.sections.forEach((s, si) => s.questions.forEach((q) => flat.push({ ...q, si, n: flat.length + 1 })));
 
-  let state = { name: "", email: "", course: "", selfEval: "", answers: {}, start: Date.now() };
+  let state = { name: "", email: "", course: "", self: {}, answers: {}, start: Date.now() };
   try { Object.assign(state, JSON.parse(localStorage.getItem(KEY) || "{}")); } catch (e) {}
   const save = () => localStorage.setItem(KEY, JSON.stringify(state));
 
   document.title = exam.title + " · Biología 9";
   $("title").textContent = exam.title;
-  $("subtitle").textContent = exam.subtitle + " · " + flat.length + " preguntas";
-  if (exam.selfEval) $("selfWrap").classList.remove("hidden");
+  $("subtitle").textContent = exam.subtitle + " · " + flat.length + " preguntas" + (exam.selfCriteria ? " + autoevaluación" : "");
+  const crit = exam.selfCriteria || [];
 
   // Render
   const qWrap = $("questions");
@@ -65,11 +65,39 @@
     save(); paintSelections();
   });
 
-  ["name", "email", "course", "selfEval"].forEach((id) => {
+  if (crit.length) {
+    $("selfPart").innerHTML =
+      '<div class="sec-title">Autoevaluación</div>' +
+      '<section class="card" id="selfCard"><p class="sub">Valora tu desempeño en clase de <b>1</b> (muy bajo) a <b>5</b> (excelente). Tu nota será el promedio de los 8 criterios.</p>' +
+      '<figure class="rubric"><img src="assets/rubrica-autoevaluacion.png" alt="Rúbrica de criterios de aprendizaje en el aula"></figure>' +
+      crit.map((c, i) =>
+        '<div class="crit" id="s' + (i + 1) + '"><div class="ct"><span class="num sm">' + (i + 1) + "</span><span><b>" + c.short + ":</b> " + c.t + '</span></div><div class="rate">' +
+        [1, 2, 3, 4, 5].map((v) => '<label class="rb"><input type="radio" name="s' + (i + 1) + '" value="' + v + '"><span>' + v + "</span></label>").join("") +
+        "</div></div>").join("") +
+      '<div class="selfavg">Tu autoevaluación: <b id="selfAvg">–</b> / 5.0</div></section>';
+  }
+  const selfAvg = () => {
+    const v = crit.map((c, i) => state.self[i + 1]);
+    return v.every((x) => x) ? Math.round((v.reduce((a, b) => a + b, 0) / v.length) * 10) / 10 : null;
+  };
+  function paintSelf() {
+    crit.forEach((c, i) => document.querySelectorAll('#s' + (i + 1) + " .rb").forEach((l, k) => l.classList.toggle("sel", state.self[i + 1] === k + 1)));
+    const a = selfAvg();
+    if ($("selfAvg")) $("selfAvg").textContent = a === null ? "–" : a.toFixed(1);
+  }
+  $("selfPart").addEventListener("change", (e) => {
+    const m = /^s(\d+)$/.exec(e.target.name || "");
+    if (!m) return;
+    state.self[+m[1]] = +e.target.value;
+    $("s" + m[1]).classList.remove("missing");
+    save(); paintSelf();
+  });
+
+  ["name", "email", "course"].forEach((id) => {
     $(id).value = state[id] || "";
     $(id).addEventListener("input", () => { state[id] = $(id).value; $(id).classList.remove("invalid"); save(); });
   });
-  paintSelections();
+  paintSelections(); paintSelf();
 
   // Barra de progreso fija y cronómetro: solo después de registrar los datos
   const prog = $("progress");
@@ -94,10 +122,6 @@
     if (state.name.trim().split(/\s+/).filter(Boolean).length < 2) bad($("name"));
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(state.email.trim())) bad($("email"));
     if (!state.course.trim()) bad($("course"));
-    if (exam.selfEval) {
-      const v = parseFloat(state.selfEval);
-      if (isNaN(v) || v < 0 || v > 5) bad($("selfEval"));
-    }
     $("idCard").classList.toggle("show-err", !ok);
     if (first) first.focus();
     return ok;
@@ -129,9 +153,15 @@
   function validate() {
     const missing = flat.filter((q) => state.answers[q.n] === undefined);
     flat.forEach((q) => $("q" + q.n).classList.toggle("missing", state.answers[q.n] === undefined));
-    $("missingNote").textContent = missing.length ? "Te falta responder " + missing.length + (missing.length === 1 ? " pregunta." : " preguntas.") : "";
-    if (missing.length) $("q" + missing[0].n).scrollIntoView({ behavior: "smooth", block: "center" });
-    return !missing.length;
+    const missSelf = crit.map((c, i) => i + 1).filter((n) => !state.self[n]);
+    crit.forEach((c, i) => $("s" + (i + 1)).classList.toggle("missing", !state.self[i + 1]));
+    const parts = [];
+    if (missing.length) parts.push(missing.length + (missing.length === 1 ? " pregunta" : " preguntas"));
+    if (missSelf.length) parts.push(missSelf.length + (missSelf.length === 1 ? " criterio de la autoevaluación" : " criterios de la autoevaluación"));
+    $("missingNote").textContent = parts.length ? "Te falta responder " + parts.join(" y ") + "." : "";
+    const firstMiss = missing.length ? $("q" + missing[0].n) : missSelf.length ? $("s" + missSelf[0]) : null;
+    if (firstMiss) firstMiss.scrollIntoView({ behavior: "smooth", block: "center" });
+    return !firstMiss;
   }
 
   // Envío a Google Sheets (Apps Script). Si falla, queda en cola y se reintenta.
@@ -162,7 +192,8 @@
     const rec = {
       id: makeId(), exam: exam.id, examTitle: exam.title,
       name: state.name.trim().replace(/\s+/g, " "), email: state.email.trim().toLowerCase(), course: state.course.trim(),
-      selfEval: exam.selfEval ? parseFloat(state.selfEval) : "",
+      selfEval: crit.length ? selfAvg() : "",
+      selfItems: crit.length ? crit.map((c, i) => state.self[i + 1]).join(",") : "",
       correct: g.correct, total: g.total, grade: g.grade,
       sections: g.secs.map((s) => s.short + ":" + s.correct + "/" + s.total).join(" | "),
       answers: flat.map((q) => LET[state.answers[q.n]]).join(""),
@@ -187,6 +218,7 @@
       "<h2>¡Listo, " + rec.name.split(" ")[0] + "!</h2>" +
       '<div class="grade" style="--pct:' + (rec.grade / 5) * 100 + '%"><b>' + rec.grade.toFixed(1) + "</b><small>de 5.0</small></div>" +
       "<p><strong>" + g.correct + " de " + g.total + "</strong> respuestas correctas</p>" +
+      (rec.selfEval !== "" ? "<p>Autoevaluación: <strong>" + Number(rec.selfEval).toFixed(1) + " / 5.0</strong></p>" : "") +
       '<p><span class="ticket-id">' + rec.id + "</span></p>" +
       '<div class="status ' + msgs[status][0] + '">' + msgs[status][1] + "</div>" +
       '<div class="breakdown">' + g.secs.map((s) =>

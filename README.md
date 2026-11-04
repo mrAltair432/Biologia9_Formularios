@@ -20,4 +20,5 @@ Mientras `SCRIPT_URL` esté vacío el sitio funciona en modo prueba (datos solo 
 - Las claves están en `js/exams.js` (`a` = índice de la correcta). La calificación se hace en el navegador.
 - La fecha y hora de inicio y de entrega de cada estudiante quedan registradas (hora de Bogotá en el correo).
 - Cada entrega nueva llega a `jhongonzalez@colegiocambridge.edu.co` con el ticket PDF adjunto (se cambia en `TEACHER_EMAIL` de `Code.gs`). Al desplegar, Google pedirá permiso para enviar correos.
+- La autoevaluación del Taller de cierre (8 criterios, de 1 a 5, con la rúbrica) se promedia en una sola nota. Llega a la pestaña `Autoevaluaciones` de la hoja (un criterio por columna) y aparece en el ticket.
 - Los envíos fallidos por falta de conexión se guardan y se reintentan.

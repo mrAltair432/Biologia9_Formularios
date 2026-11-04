@@ -29,7 +29,6 @@
         <div><label class="f" for="name">Nombre completo</label><input type="text" id="name" autocomplete="name" placeholder="Ej: Ana María Gómez"><div class="err">Escribe tu nombre completo.</div></div>
         <div><label class="f" for="email">Correo electrónico</label><input type="email" id="email" autocomplete="email" placeholder="tucorreo@ejemplo.com"><div class="err">Escribe un correo válido.</div></div>
         <div><label class="f" for="course">Curso</label><input type="text" id="course" placeholder="Ej: 901" maxlength="12"><div class="err">Escribe tu curso.</div></div>
-        <div id="selfWrap" class="hidden"><label class="f" for="selfEval">Autoevaluación (0.0 – 5.0)</label><input type="number" id="selfEval" min="0" max="5" step="0.1" placeholder="Ej: 4.0"><div class="err">Escribe un valor entre 0 y 5.</div></div>
       </div>
       <div class="actions" style="margin-bottom:0"><button class="btn" type="button" id="startBtn">Comenzar →</button></div>
       <p class="note">Al comenzar se registra la hora de inicio y no podrás cambiar tus datos.</p>
@@ -37,6 +36,7 @@
     <div id="quizPart" class="hidden">
       <div class="card who" id="who"></div>
       <div id="questions"></div>
+      <div id="selfPart"></div>
       <div class="actions"><button class="btn gold" type="submit" id="submitBtn">Terminar y generar ticket ✓</button></div>
       <p class="note" id="missingNote"></p>
     </div>

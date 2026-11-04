@@ -7,6 +7,8 @@ const SHEET = "Respuestas";
 const TEACHER_EMAIL = "jhongonzalez@colegiocambridge.edu.co";
 const TZ = "America/Bogota";
 const HEADERS = ["Fecha de entrega", "Hora de inicio", "ID ticket", "Actividad", "Nombre", "Correo", "Curso", "Autoevaluación", "Correctas", "Total", "Nota", "Secciones", "Respuestas", "Segundos"];
+const SELF_SHEET = "Autoevaluaciones";
+const SELF_HEADERS = ["Fecha de entrega", "ID ticket", "Nombre", "Correo", "Curso", "Actividad", "1 Compromiso", "2 Responsabilidad", "3 Respeto", "4 Participación", "5 Atención", "6 Trabajo en equipo", "7 Cuidado del material", "8 Actitud de mejora", "Nota autoevaluación"];
 
 function getSheet_() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -17,6 +19,19 @@ function getSheet_() {
     sh.setFrozenRows(1);
     sh.getRange(1, 1, 1, HEADERS.length).setFontWeight("bold").setBackground("#12285a").setFontColor("#ffffff");
     sh.getRange("A:B").setNumberFormat("yyyy-mm-dd hh:mm:ss");
+  }
+  return sh;
+}
+
+function getSelfSheet_() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sh = ss.getSheetByName(SELF_SHEET);
+  if (!sh) {
+    sh = ss.insertSheet(SELF_SHEET);
+    sh.appendRow(SELF_HEADERS);
+    sh.setFrozenRows(1);
+    sh.getRange(1, 1, 1, SELF_HEADERS.length).setFontWeight("bold").setBackground("#12285a").setFontColor("#ffffff");
+    sh.getRange("A:A").setNumberFormat("yyyy-mm-dd hh:mm:ss");
   }
   return sh;
 }
@@ -59,6 +74,13 @@ function doPost(e) {
         String(data.name).slice(0, 120), String(data.email).slice(0, 120), String(data.course).slice(0, 20), data.selfEval,
         Number(data.correct), Number(data.total), Number(data.grade), String(data.sections || ""), String(data.answers || ""), Number(data.seconds || 0)
       ]);
+      if (data.selfItems) {
+        const items = String(data.selfItems).split(",").map(Number);
+        getSelfSheet_().appendRow([
+          new Date(data.submittedAt || Date.now()), data.id, String(data.name).slice(0, 120), String(data.email).slice(0, 120),
+          String(data.course).slice(0, 20), data.exam
+        ].concat(items, [Number(data.selfEval)]));
+      }
     }
   } finally {
     lock.releaseLock();
@@ -76,7 +98,7 @@ function notify_(d) {
       replyTo: String(d.email),
       subject: "[Biología 9] " + d.examTitle + " · " + d.name + " (" + d.course + ") · " + Number(d.grade).toFixed(1),
       htmlBody: "<p><b>" + esc_(d.name) + "</b> (" + esc_(d.email) + ") · Curso " + esc_(d.course) + "</p>" +
-        "<p>Actividad: " + esc_(d.examTitle) + "<br>Entregado: " + when + "<br>Nota: <b>" + Number(d.grade).toFixed(1) + "</b> (" + d.correct + "/" + d.total + ")<br>ID: " + esc_(d.id) + "</p>"
+        "<p>Actividad: " + esc_(d.examTitle) + "<br>Entregado: " + when + "<br>Nota: <b>" + Number(d.grade).toFixed(1) + "</b> (" + d.correct + "/" + d.total + ")" + (d.selfItems ? "<br>Autoevaluación: <b>" + Number(d.selfEval).toFixed(1) + "</b> / 5.0" : "") + "<br>ID: " + esc_(d.id) + "</p>"
     };
     if (d.pdfBase64) {
       opts.attachments = [Utilities.newBlob(Utilities.base64Decode(d.pdfBase64), "application/pdf", d.id + ".pdf")];

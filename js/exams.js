@@ -44,6 +44,16 @@ window.EXAMS = {
     subtitle: "Evaluación de Biología · Grado noveno",
     icon: "⚡",
     selfEval: true,
+    selfCriteria: [
+      { short: "Compromiso", t: "Me esfuerzo por aprender y cumplir con las actividades de la clase." },
+      { short: "Responsabilidad", t: "Llevo los materiales y entrego las tareas a tiempo." },
+      { short: "Respeto", t: "Escucho a mi docente y compañeros, y valoro sus opiniones." },
+      { short: "Participación", t: "Aporto ideas, hago preguntas y participo en las actividades." },
+      { short: "Atención", t: "Presto atención a las explicaciones y sigo las instrucciones." },
+      { short: "Trabajo en equipo", t: "Coopero con mis compañeros y comparto ideas." },
+      { short: "Cuidado del material y del espacio", t: "Uso responsablemente los recursos y sigo las normas de seguridad." },
+      { short: "Actitud de mejora", t: "Acepto las recomendaciones y hago mi mejor esfuerzo por mejorar." }
+    ],
     sections: [
       { name: "U.C.C.C", short: "U.C.C.C", questions: [
         { q: "¿Qué afirmación se aplica a un axón en reposo?", o: ["No hay diferencia de potencial eléctrico entre las superficies externa e interna de la membrana plasmática.", "La superficie externa de la membrana plasmática es positiva con respecto a la superficie interna.", "La superficie externa de la membrana plasmática es negativa con respecto a la superficie interna.", "La superficie interna de la membrana plasmática tiene una concentración mucho mayor de iones de sodio."], a: 1 },

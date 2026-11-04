@@ -41,21 +41,20 @@
     doc.setFillColor(...GOLD); doc.rect(0, 62, W, 2.2, "F");
 
     // Datos del estudiante
-    let y = 80;
+    let y = 78;
     const row = (label, value) => {
       doc.setFont("helvetica", "bold"); doc.setFontSize(8.5); doc.setTextColor(...MUTED); doc.text(label.toUpperCase(), M, y);
-      doc.setFont("helvetica", "normal"); doc.setFontSize(13); doc.setTextColor(...INK); doc.text(String(value), M, y + 6);
-      y += 16;
+      doc.setFont("helvetica", "normal"); doc.setFontSize(12.5); doc.setTextColor(...INK); doc.text(String(value), M, y + 5.5);
+      y += 14;
     };
     row("Estudiante", rec.name); row("Correo", rec.email); row("Curso", rec.course);
     const d = new Date(rec.submittedAt);
     row("Fecha y hora", d.toLocaleString("es-CO", { dateStyle: "long", timeStyle: "short" }));
     const mm = Math.floor(rec.seconds / 60), ss = rec.seconds % 60;
     row("Tiempo empleado", mm + " min " + ss + " s");
-    if (rec.selfEval !== "") row("Autoevaluación del estudiante", Number(rec.selfEval).toFixed(1));
 
     // Nota
-    const cx = 160, cy = 100, R = 26;
+    const cx = 160, cy = 96, R = 24;
     doc.setFillColor(240, 244, 255); doc.circle(cx, cy, R + 4, "F");
     doc.setDrawColor(226, 232, 247); doc.setLineWidth(4); doc.circle(cx, cy, R, "S");
     doc.setDrawColor(...GOLD); doc.setLineWidth(4);
@@ -71,7 +70,7 @@
     doc.text(g.correct + " de " + g.total + " correctas", cx, cy + R + 12, { align: "center" });
 
     // Resultados por sección
-    y = Math.max(y, 150) + 2;
+    y = Math.max(y, 142) + 2;
     doc.setFont("helvetica", "bold"); doc.setFontSize(12); doc.setTextColor(...NAVY2); doc.text("Resultado por sección", M, y);
     doc.setFillColor(...GOLD); doc.rect(M, y + 2, 22, 1, "F");
     y += 11;
@@ -85,17 +84,38 @@
     });
 
     // Respuestas marcadas
-    y += 6;
+    y += 4;
     doc.setFont("helvetica", "bold"); doc.setFontSize(12); doc.setTextColor(...NAVY2); doc.text("Respuestas marcadas", M, y);
     doc.setFillColor(...GOLD); doc.rect(M, y + 2, 22, 1, "F");
-    y += 10;
-    const per = 10, cell = (W - 2 * M) / per;
+    y += 8;
+    const per = Math.min(rec.answers.length, 20), cell = (W - 2 * M) / per;
     for (let i = 0; i < rec.answers.length; i++) {
       const col = i % per, rw = Math.floor(i / per);
       const x = M + col * cell, yy = y + rw * 14;
-      doc.setFillColor(240, 244, 255); doc.roundedRect(x, yy, cell - 2, 12, 2, 2, "F");
-      doc.setFont("helvetica", "normal"); doc.setFontSize(7); doc.setTextColor(...MUTED); doc.text(String(i + 1), x + (cell - 2) / 2, yy + 4, { align: "center" });
-      doc.setFont("helvetica", "bold"); doc.setFontSize(11); doc.setTextColor(...NAVY2); doc.text(rec.answers[i], x + (cell - 2) / 2, yy + 9.5, { align: "center" });
+      doc.setFillColor(240, 244, 255); doc.roundedRect(x, yy, cell - 1.5, 12, 2, 2, "F");
+      doc.setFont("helvetica", "normal"); doc.setFontSize(6.5); doc.setTextColor(...MUTED); doc.text(String(i + 1), x + (cell - 1.5) / 2, yy + 4, { align: "center" });
+      doc.setFont("helvetica", "bold"); doc.setFontSize(10.5); doc.setTextColor(...NAVY2); doc.text(rec.answers[i], x + (cell - 1.5) / 2, yy + 9.5, { align: "center" });
+    }
+    y += Math.ceil(rec.answers.length / per) * 14 + 12;
+
+    // Autoevaluación
+    if (rec.selfEval !== "" && rec.selfItems) {
+      const names = ((exam.selfCriteria) || []).map((c) => c.short);
+      const vals = rec.selfItems.split(",");
+      doc.setFont("helvetica", "bold"); doc.setFontSize(12); doc.setTextColor(...NAVY2); doc.text("Autoevaluación", M, y);
+      doc.setFillColor(...GOLD); doc.rect(M, y + 2, 22, 1, "F");
+      doc.setFillColor(...NAVY2); doc.roundedRect(W - M - 38, y - 7, 38, 12, 3, 3, "F");
+      doc.setTextColor(255, 255, 255); doc.setFontSize(8); doc.setFont("helvetica", "normal"); doc.text("NOTA", W - M - 33, y - 1.5);
+      doc.setFont("helvetica", "bold"); doc.setFontSize(14); doc.setTextColor(246, 215, 122);
+      doc.text(Number(rec.selfEval).toFixed(1) + " / 5.0", W - M - 4, y + 3, { align: "right" });
+      y += 9;
+      vals.forEach((v, i) => {
+        const col = i % 2, rw = Math.floor(i / 2), x = M + col * 92, yy = y + rw * 7;
+        doc.setFont("helvetica", "normal"); doc.setFontSize(8.5); doc.setTextColor(...INK);
+        doc.text((i + 1) + ". " + (names[i] || ""), x, yy, { maxWidth: 52 });
+          for (let k = 1; k <= 5; k++) { doc.setFillColor(...(k <= Number(v) ? GOLD : [226, 232, 247])); doc.circle(x + 56 + k * 4.2, yy - 1.2, 1.5, "F"); }
+          doc.setFont("helvetica", "bold"); doc.text(String(v), x + 84, yy, { align: "right" });
+      });
     }
 
     // Pie
