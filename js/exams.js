@@ -40,7 +40,7 @@ window.EXAMS = {
 
   quiz: {
     id: "quiz",
-    title: "Taller de cierre · II trimestre",
+    title: "Taller de cierre · III trimestre",
     subtitle: "Evaluación de Biología · Grado noveno",
     icon: "⚡",
     selfEval: true,
